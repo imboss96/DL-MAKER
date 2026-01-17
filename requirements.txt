@@ -18,9 +18,8 @@ httplib2==0.22.0
 # Environment variables
 python-dotenv==1.0.0
 
-# Barcode generation
-pypdf417==0.7.2
-Pillow==10.1.0
+# HTTP requests for API proxying
+requests==2.31.0
 # Utilities
 pyOpenSSL==23.2.0
 cryptography==41.0.5
