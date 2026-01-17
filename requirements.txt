@@ -21,8 +21,10 @@ python-dotenv==1.0.0
 # HTTP requests for API proxying
 requests==2.31.0
 
-# Barcode generation
-barcode[pdf417]==1.1
+# PDF417 Barcode generation for US driver's licenses
+pdf417==0.7.2
+reportlab==4.0.7
+Pillow==10.1.0
 # Utilities
 pyOpenSSL==23.2.0
 cryptography==41.0.5

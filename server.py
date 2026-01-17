@@ -290,7 +290,7 @@ def check_license_status(license_data, status, today):
 
 @app.route('/api/pdf417')
 def generate_pdf417():
-    """Generate PDF417 barcode using python-barcode library"""
+    """Generate proper PDF417 barcode for US driver's licenses"""
     try:
         data = request.args.get('data', '')
         
@@ -301,37 +301,36 @@ def generate_pdf417():
             }), 400
         
         try:
-            from barcode.pdf417 import PDF417
+            from pdf417 import encode, render_image
         except ImportError:
             return jsonify({
                 "success": False,
-                "error": "PDF417 barcode library not available"
+                "error": "PDF417 library not available"
             }), 500
         
         try:
-            # Create PDF417 barcode
-            barcode_obj = PDF417(data, columns=10, security_level=2)
+            # Encode data to PDF417 barcode
+            codes = encode(data, columns=10, security_level=2)
             
-            # Generate SVG first
-            svg_buffer = BytesIO()
-            barcode_obj.write(svg_buffer, options={'unit': 'mm'})
-            svg_buffer.seek(0)
-            svg_content = svg_buffer.read().decode('utf-8')
+            # Render as image
+            img = render_image(codes, scale=3)
             
-            # Convert SVG to base64 data URL
-            svg_base64 = base64.b64encode(svg_content.encode()).decode()
+            # Convert to base64
+            img_buffer = BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
             
             return jsonify({
                 "success": True,
-                "barcode": f"data:image/svg+xml;base64,{svg_base64}"
+                "barcode": f"data:image/png;base64,{img_base64}",
+                "type": "pdf417"
             })
         
         except Exception as barcode_error:
-            # Fallback: Try to generate a simple text representation
-            text_barcode = f"PDF417: {data[:50]}..." if len(data) > 50 else f"PDF417: {data}"
             return jsonify({
                 "success": False,
-                "error": f"Barcode generation error: {str(barcode_error)}"
+                "error": f"PDF417 generation failed: {str(barcode_error)}"
             }), 500
     
     except Exception as e:
