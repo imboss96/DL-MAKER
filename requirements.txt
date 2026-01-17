@@ -1,0 +1,28 @@
+# Core Flask Framework
+Flask==2.3.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
+
+# CORS support for API
+Flask-CORS==4.0.0
+
+# Google Sheets API
+google-api-python-client==2.100.0
+google-auth==2.23.3
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==1.1.0
+
+# HTTP client for Google API
+httplib2==0.22.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Utilities
+pyOpenSSL==23.2.0
+cryptography==41.0.5
+
+# Development tools (optional)
+blinker==1.6.2
+click==8.1.7
+itsdangerous==2.1.2

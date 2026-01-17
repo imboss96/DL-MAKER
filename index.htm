@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USA Driver's License Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-blue: #3B82F6;
+            --light-bg: #F8FAFC;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 3rem;
+        }
+        
+        /* Header Styles */
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            color: white;
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .app-title i {
+            font-size: 1.5rem;
+        }
+        
+        .app-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+        
+        .search-box {
+            max-width: 350px;
+        }
+        
+        .search-box .input-group-text {
+            background-color: white;
+            border-right: none;
+        }
+        
+        .search-box .form-control {
+            border-left: none;
+            padding-left: 0;
+        }
+        
+        .search-box .form-control:focus {
+            box-shadow: none;
+            border-color: #dee2e6;
+        }
+        
+        /* Card Styles */
+        .card-license {
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+            background: white;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+        }
+        
+        .card-license:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+            border-color: var(--secondary-blue);
+        }
+        
+        .license-header {
+            background: linear-gradient(to right, #F0F9FF, #E0F2FE);
+            padding: 1.25rem 1rem;
+            border-radius: 10px 10px 0 0;
+            border-bottom: 2px solid #E5E7EB;
+        }
+        
+        .state-badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-row {
+            padding: 0.85rem 0;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #4B5563;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+        
+        .info-value {
+            color: #1F2937;
+            font-weight: 500;
+            text-align: right;
+            flex: 1;
+            word-break: break-word;
+        }
+        
+        .qr-code {
+            width: 110px;
+            height: 110px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 8px;
+            background: white;
+            margin: 0 auto;
+        }
+        
+        /* Status Badges */
+        .expiry-badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.7rem;
+            font-weight: 600;
+            border-radius: 12px;
+        }
+        
+        .expiry-soon {
+            background-color: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #FBBF24;
+        }
+        
+        .expiry-valid {
+            background-color: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #10B981;
+        }
+        
+        .expiry-expired {
+            background-color: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #EF4444;
+        }
+        
+        /* Modal Styles */
+        .modal-lg-custom {
+            max-width: 900px;
+        }
+        
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            background: linear-gradient(to right, #F0F9FF, #E0F2FE);
+            border-bottom: 2px solid #E5E7EB;
+            border-radius: 12px 12px 0 0;
+            padding: 1.5rem 1.5rem;
+        }
+        
+        .modal-title {
+            font-weight: 700;
+            color: #1E40AF;
+        }
+        
+        /* Filter Card */
+        .filter-card {
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #E5E7EB;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .filter-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        /* Pagination */
+        .pagination .page-link {
+            color: var(--primary-blue);
+            border: 1px solid #E5E7EB;
+            padding: 0.5rem 1rem;
+            margin: 0 3px;
+            border-radius: 8px;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+        
+        .pagination .page-link:hover {
+            background-color: #F1F5F9;
+            border-color: #CBD5E1;
+        }
+        
+        /* Info Bar */
+        .info-bar {
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-top: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .app-title {
+                font-size: 1.5rem;
+            }
+            
+            .search-box {
+                max-width: 100%;
+                margin-top: 1rem;
+            }
+            
+            .qr-code {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .header-section {
+                padding: 1rem 0;
+            }
+            
+            .filter-card .card-body {
+                padding: 1rem;
+            }
+            
+            .info-row {
+                padding: 0.7rem 0;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .card-license {
+                margin-bottom: 1rem;
+            }
+            
+            .license-header {
+                padding: 1rem;
+            }
+            
+            .qr-code {
+                width: 80px;
+                height: 80px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .header-section,
+            .filter-card,
+            .pagination,
+            .info-bar,
+            .view-details,
+            #refreshData {
+                display: none !important;
+            }
+            
+            .card-license {
+                break-inside: avoid;
+                border: 1px solid #000;
+                box-shadow: none;
+            }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+        
+        /* Loading Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: #64748B;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 col-md-8">
+                    <div class="app-title">
+                        <i class="fas fa-id-card"></i>
+                        <div>
+                            USA Driver's License Registry
+                            <div class="app-subtitle" id="dataSourceInfo">
+                                <i class="fas fa-database me-1"></i>
+                                Loading data source...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-4 text-md-end">
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <button class="btn btn-sm btn-light" id="refreshData">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                        <div class="input-group search-box">
+                            <span class="input-group-text bg-white">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control" id="searchInput" 
+                                   placeholder="Search by name or license #">
+                            <button class="btn btn-light" type="button" id="searchBtn">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Filters Card -->
+        <div class="filter-card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                            State
+                        </label>
+                        <select class="form-select" id="stateFilter">
+                            <option value="">All States</option>
+                            <!-- States will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-calendar-check me-2 text-primary"></i>
+                            License Status
+                        </label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Licenses</option>
+                            <option value="valid">Valid</option>
+                            <option value="expiring">Expiring Soon (≤30 days)</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-list-ol me-2 text-primary"></i>
+                            Items per page
+                        </label>
+                        <select class="form-select" id="pageSize">
+                            <option value="10">10 licenses</option>
+                            <option value="25" selected>25 licenses</option>
+                            <option value="50">50 licenses</option>
+                            <option value="100">100 licenses</option>
+                            <option value="250">250 licenses</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-3 col-md-6 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary w-100" id="resetFilters">
+                            <i class="fas fa-redo me-2"></i>Reset All Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- License Cards Grid -->
+        <div class="row" id="licenseGrid">
+            <!-- Loading State -->
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h4 class="mt-3">Loading Driver's License Data...</h4>
+                        <p class="text-muted">Connecting to data source...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Pagination will be generated here -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Info Bar -->
+        <div class="info-bar">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle text-primary me-3 fs-5"></i>
+                        <div>
+                            <span id="resultCount" class="fw-bold fs-5">0</span> 
+                            <span class="text-muted">driver's licenses found</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    <div class="text-muted">
+                        <i class="fas fa-file-alt me-2"></i>
+                        <span id="pageInfo" class="fw-semibold">Page 1 of 1</span>
+                        <span class="mx-2">•</span>
+                        <small id="dataTimestamp">Last updated: Loading...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Text -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-lightbulb fs-4"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="alert-heading mb-2">Quick Tips</h6>
+                            <ul class="mb-0 ps-3">
+                                <li>Click on any license card to view detailed information</li>
+                                <li>Use QR codes to quickly access license data on mobile devices</li>
+                                <li>Copy AAMVA data to generate PDF417 barcodes for testing</li>
+                                <li>Press <kbd>Ctrl+F</kbd> to quickly focus the search box</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- License Detail Modal -->
+    <div class="modal fade" id="licenseModal" tabindex="-1" aria-labelledby="licenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg-custom modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="licenseModalLabel">
+                        <i class="fas fa-id-card me-2"></i>Driver's License Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Modal content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                    <button type="button" class="btn btn-primary" id="printLicense">
+                        <i class="fas fa-print me-2"></i>Print License
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 pt-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>Secure Driver's License Viewer
+                    </h6>
+                    <p class="text-muted small">
+                        This system displays driver's license information in a secure, read-only format.
+                        All data is protected and accessible only through authorized interfaces.
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted mb-3">Features</h6>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Real-time Data Sync</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Secure QR Codes</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Advanced Search</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted mb-3">Tools</h6>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="fas fa-external-link-alt me-2"></i>
+                            <a href="https://barcode.tec-it.com/en/Pdf417" target="_blank" class="text-decoration-none">
+                                PDF417 Barcode Generator
+                            </a>
+                        </li>
+                        <li><i class="fas fa-mobile-alt me-2"></i>Mobile QR Scanner</li>
+                        <li><i class="fas fa-print me-2"></i>Print-Friendly View</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-3 pt-3 border-top">
+                <div class="col-12 text-center">
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-lock me-1"></i>
+                        Secure System • Data Protection • Read-Only Access
+                        <br>
+                        <span class="text-muted mt-1 d-block">
+                            © 2024 Driver's License Viewer • v1.0
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script src="app.js"></script>
+
+    <!-- Additional JavaScript -->
+    <script>
+        // Print functionality
+        document.getElementById('printLicense')?.addEventListener('click', function() {
+            const modalContent = document.querySelector('.modal-content').cloneNode(true);
+            const printWindow = window.open('', '_blank');
+            
+            // Remove buttons and unnecessary elements for printing
+            const buttons = modalContent.querySelectorAll('button');
+            buttons.forEach(button => button.remove());
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Driver's License Details</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+                        .print-section { margin-bottom: 20px; }
+                        .print-label { font-weight: bold; color: #666; }
+                        .print-value { font-size: 16px; margin-bottom: 10px; }
+                        .qr-code { text-align: center; margin: 20px 0; }
+                        @media print {
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${modalContent.innerHTML}
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        });
+
+        // Update timestamp display
+        function updateTimestamp() {
+            const now = new Date();
+            const timestamp = document.getElementById('dataTimestamp');
+            if (timestamp) {
+                timestamp.textContent = `Last updated: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+            }
+        }
+
+        // Update timestamp every minute
+        setInterval(updateTimestamp, 60000);
+        updateTimestamp();
+
+        // Keyboard shortcuts help
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+/ for keyboard shortcuts help
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                alert('Keyboard Shortcuts:\n\n' +
+                      'Ctrl+F - Focus search box\n' +
+                      'Escape - Clear search\n' +
+                      'Ctrl+/ - Show this help\n' +
+                      'Ctrl+P - Print current view');
+            }
+            
+            // Ctrl+P for printing current view
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+
+        // Add data-source update to timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            const timestampElement = document.getElementById('dataTimestamp');
+            if (timestampElement) {
+                setInterval(() => {
+                    const now = new Date();
+                    timestampElement.textContent = `Last updated: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                }, 60000);
+            }
+        });
+
+        // Smooth scroll to top when clicking pagination
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.pagination')) {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+        });
+
+        // Handle print button in modal
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'printLicense' || e.target.closest('#printLicense')) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('licenseModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
