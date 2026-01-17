@@ -579,6 +579,13 @@ class LicenseViewer {
                                     <i class="fas fa-barcode me-2"></i>Generate PDF417
                                 </button>
                             </div>
+                            
+                            <div class="mt-3" id="barcodeContainer" style="display:none;">
+                                <div class="text-center p-3 border rounded bg-light">
+                                    <img id="pdf417Image" src="" alt="PDF417 Barcode" style="max-width: 100%; height: auto;">
+                                    <p class="text-muted small mt-2 mb-0">PDF417 Barcode (temporary - refreshes on page reload)</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -608,7 +615,21 @@ class LicenseViewer {
         document.getElementById('generateBarcode').addEventListener('click', () => {
             const aamvaText = document.getElementById('aamvaData').textContent;
             const encodedData = encodeURIComponent(aamvaText);
-            window.open(`https://barcode.tec-it.com/en/Pdf417?data=${encodedData}`, '_blank');
+            const barcodeUrl = `https://barcode.tec-it.com/barcode/pdf417/${encodedData}`;
+            const barcodeContainer = document.getElementById('barcodeContainer');
+            const barcodeImg = document.getElementById('pdf417Image');
+            
+            // Show loading state
+            barcodeContainer.style.display = 'block';
+            barcodeImg.src = '';
+            barcodeImg.alt = 'Loading barcode...';
+            
+            // Fetch and display the barcode
+            barcodeImg.src = barcodeUrl;
+            barcodeImg.onerror = () => {
+                barcodeImg.alt = 'Failed to generate barcode. Try opening in TEC-IT website.';
+                barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Failed to generate barcode</p>';
+            };
         });
 
         // Show modal
