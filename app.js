@@ -376,15 +376,14 @@ class LicenseViewer {
             // Clear previous QR code if exists
             element.innerHTML = '';
             
-            // Use the qrcode.js library
-            new QRCode(elementId, {
-                text: data,
-                width: 100,
-                height: 100,
-                colorDark: '#000000',
-                colorLight: '#FFFFFF',
-                correctLevel: QRCode.CorrectLevel.H
-            });
+            // Use QR Server API to generate QR code
+            const encodedData = encodeURIComponent(data);
+            const img = document.createElement('img');
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodedData}`;
+            img.alt = 'QR Code';
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            element.appendChild(img);
         } catch (error) {
             // Silently fail if QR code generation fails
         }
