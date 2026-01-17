@@ -10,6 +10,8 @@ import json
 from datetime import datetime
 from google_sheets import GoogleSheetsConnector
 import requests
+import base64
+from io import BytesIO
 
 # Load environment variables from .env file
 load_dotenv()
@@ -288,7 +290,7 @@ def check_license_status(license_data, status, today):
 
 @app.route('/api/pdf417')
 def generate_pdf417():
-    """Generate PDF417 barcode by proxying to TEC-IT API"""
+    """Generate PDF417 barcode using python-barcode library"""
     try:
         data = request.args.get('data', '')
         
@@ -298,43 +300,44 @@ def generate_pdf417():
                 "error": "No data provided"
             }), 400
         
-        # Use TEC-IT query parameter format (the API endpoint format)
-        # Try the direct barcode endpoint first
-        tec_it_urls = [
-            f'https://barcode.tec-it.com/api/barcode/pdf417/{data}',
-            f'https://barcode.tec-it.com/barcode/pdf417/{data}?quality=1',
-        ]
+        try:
+            from barcode.pdf417 import PDF417
+        except ImportError:
+            return jsonify({
+                "success": False,
+                "error": "PDF417 barcode library not available"
+            }), 500
         
-        for tec_it_url in tec_it_urls:
-            try:
-                response = requests.get(tec_it_url, timeout=10)
-                
-                if response.status_code == 200:
-                    # Convert binary image to base64
-                    import base64
-                    img_base64 = base64.b64encode(response.content).decode()
-                    
-                    return jsonify({
-                        "success": True,
-                        "barcode": f"data:image/png;base64,{img_base64}"
-                    })
-            except:
-                continue
+        try:
+            # Create PDF417 barcode
+            barcode_obj = PDF417(data, columns=10, security_level=2)
+            
+            # Generate SVG first
+            svg_buffer = BytesIO()
+            barcode_obj.write(svg_buffer, options={'unit': 'mm'})
+            svg_buffer.seek(0)
+            svg_content = svg_buffer.read().decode('utf-8')
+            
+            # Convert SVG to base64 data URL
+            svg_base64 = base64.b64encode(svg_content.encode()).decode()
+            
+            return jsonify({
+                "success": True,
+                "barcode": f"data:image/svg+xml;base64,{svg_base64}"
+            })
         
-        return jsonify({
-            "success": False,
-            "error": "TEC-IT API could not generate barcode. The data format may be invalid."
-        }), 500
+        except Exception as barcode_error:
+            # Fallback: Try to generate a simple text representation
+            text_barcode = f"PDF417: {data[:50]}..." if len(data) > 50 else f"PDF417: {data}"
+            return jsonify({
+                "success": False,
+                "error": f"Barcode generation error: {str(barcode_error)}"
+            }), 500
     
-    except requests.exceptions.Timeout:
-        return jsonify({
-            "success": False,
-            "error": "Request to barcode service timed out"
-        }), 500
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": f"Server error: {str(e)}"
         }), 500
 
 if __name__ == '__main__':

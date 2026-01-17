@@ -20,6 +20,9 @@ python-dotenv==1.0.0
 
 # HTTP requests for API proxying
 requests==2.31.0
+
+# Barcode generation
+barcode[pdf417]==1.1
 # Utilities
 pyOpenSSL==23.2.0
 cryptography==41.0.5
