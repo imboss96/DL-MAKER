@@ -19,7 +19,9 @@ class LicenseViewer {
         this.setupFilters();
         this.setupSearch();
         this.setupRefreshButton();
-        this.renderLicenses();
+        
+        console.log('🎯 Init complete. Applying filters...');
+        this.applyFilters();
     }
 
     async loadDataFromAPI() {
@@ -209,15 +211,25 @@ class LicenseViewer {
             if (selectedStatus && license.expiration) {
                 try {
                     const today = new Date();
-                    const expDate = new Date(license.expiration);
-                    const daysUntilExpiry = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
+                    today.setHours(0, 0, 0, 0);
                     
-                    if (selectedStatus === 'valid') {
-                        statusMatch = daysUntilExpiry > 30;
-                    } else if (selectedStatus === 'expiring') {
-                        statusMatch = daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
-                    } else if (selectedStatus === 'expired') {
-                        statusMatch = daysUntilExpiry < 0;
+                    // Handle YYYY-MM-DD format
+                    const expDate = new Date(license.expiration + 'T00:00:00');
+                    
+                    if (!isNaN(expDate.getTime())) {
+                        const daysUntilExpiry = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
+                        console.log(`License ${license.firstName}: expires ${license.expiration}, days until: ${daysUntilExpiry}`);
+                        
+                        if (selectedStatus === 'valid') {
+                            statusMatch = daysUntilExpiry > 30;
+                        } else if (selectedStatus === 'expiring') {
+                            statusMatch = daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
+                        } else if (selectedStatus === 'expired') {
+                            statusMatch = daysUntilExpiry < 0;
+                        }
+                    } else {
+                        console.warn('Invalid date:', license.expiration);
+                        statusMatch = true;
                     }
                 } catch (e) {
                     console.warn('Date parsing error for:', license.expiration, e);
