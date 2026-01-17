@@ -2,13 +2,20 @@
 Enhanced Flask Server with Google Sheets Integration
 """
 
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 import json
 from datetime import datetime
 from google_sheets import GoogleSheetsConnector
+from io import BytesIO
+import base64
+try:
+    from pdf417 import encode as pdf417_encode
+    PDF417_AVAILABLE = True
+except ImportError:
+    PDF417_AVAILABLE = False
 
 # Load environment variables from .env file
 load_dotenv()
@@ -284,6 +291,68 @@ def check_license_status(license_data, status, today):
             return True
     except:
         return False
+
+@app.route('/api/pdf417')
+def generate_pdf417():
+    """Generate PDF417 barcode from AAMVA data"""
+    try:
+        data = request.args.get('data', '')
+        
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "No data provided"
+            }), 400
+        
+        if not PDF417_AVAILABLE:
+            return jsonify({
+                "success": False,
+                "error": "PDF417 library not available"
+            }), 500
+        
+        # Generate PDF417 barcode
+        barcode = pdf417_encode(data)
+        
+        # Create image from barcode
+        from PIL import Image, ImageDraw
+        
+        # Calculate image dimensions
+        rows = len(barcode)
+        cols = len(barcode[0]) if barcode else 0
+        pixel_size = 4
+        width = cols * pixel_size + 40
+        height = rows * pixel_size + 40
+        
+        # Create white image
+        img = Image.new('RGB', (width, height), 'white')
+        draw = ImageDraw.Draw(img)
+        
+        # Draw barcode
+        for y, row in enumerate(barcode):
+            for x, bit in enumerate(row):
+                if bit:
+                    x1 = x * pixel_size + 20
+                    y1 = y * pixel_size + 20
+                    x2 = x1 + pixel_size
+                    y2 = y1 + pixel_size
+                    draw.rectangle([x1, y1, x2, y2], fill='black')
+        
+        # Convert to base64
+        img_io = BytesIO()
+        img.save(img_io, 'PNG', quality=95)
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+        
+        return jsonify({
+            "success": True,
+            "barcode": f"data:image/png;base64,{img_base64}"
+        })
+    
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 if __name__ == '__main__':
     print("🚀 Starting Driver's License Viewer Server")

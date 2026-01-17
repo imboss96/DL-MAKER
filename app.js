@@ -614,22 +614,31 @@ class LicenseViewer {
 
         document.getElementById('generateBarcode').addEventListener('click', () => {
             const aamvaText = document.getElementById('aamvaData').textContent;
-            const encodedData = encodeURIComponent(aamvaText);
-            const barcodeUrl = `https://barcode.tec-it.com/barcode/pdf417/${encodedData}`;
             const barcodeContainer = document.getElementById('barcodeContainer');
             const barcodeImg = document.getElementById('pdf417Image');
             
             // Show loading state
             barcodeContainer.style.display = 'block';
             barcodeImg.src = '';
-            barcodeImg.alt = 'Loading barcode...';
+            barcodeImg.alt = 'Generating barcode...';
             
-            // Fetch and display the barcode
-            barcodeImg.src = barcodeUrl;
-            barcodeImg.onerror = () => {
-                barcodeImg.alt = 'Failed to generate barcode. Try opening in TEC-IT website.';
-                barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Failed to generate barcode</p>';
-            };
+            // Call server API to generate barcode
+            const encodedData = encodeURIComponent(aamvaText);
+            fetch(`/api/pdf417?data=${encodedData}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        barcodeImg.src = data.barcode;
+                        barcodeImg.alt = 'PDF417 Barcode';
+                    } else {
+                        barcodeImg.alt = 'Failed to generate barcode: ' + (data.error || 'Unknown error');
+                        barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>' + (data.error || 'Failed to generate barcode') + '</p>';
+                    }
+                })
+                .catch(error => {
+                    barcodeImg.alt = 'Error: ' + error.message;
+                    barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Error: ' + error.message + '</p>';
+                });
         });
 
         // Show modal
