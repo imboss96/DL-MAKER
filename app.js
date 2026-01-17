@@ -613,7 +613,7 @@ class LicenseViewer {
         });
 
         document.getElementById('generateBarcode').addEventListener('click', () => {
-            const aamvaText = document.getElementById('aamvaData').textContent;
+            const aamvaText = document.getElementById('aamvaData').textContent.trim();
             const barcodeContainer = document.getElementById('barcodeContainer');
             const barcodeImg = document.getElementById('pdf417Image');
             
@@ -622,8 +622,11 @@ class LicenseViewer {
             barcodeImg.src = '';
             barcodeImg.alt = 'Generating barcode...';
             
+            // Convert AAMVA text to compact format (remove newlines)
+            const compactData = aamvaText.replace(/\n/g, '');
+            const encodedData = encodeURIComponent(compactData);
+            
             // Call server API to generate barcode
-            const encodedData = encodeURIComponent(aamvaText);
             fetch(`/api/pdf417?data=${encodedData}`)
                 .then(response => response.json())
                 .then(data => {
@@ -631,12 +634,12 @@ class LicenseViewer {
                         barcodeImg.src = data.barcode;
                         barcodeImg.alt = 'PDF417 Barcode';
                     } else {
-                        barcodeImg.alt = 'Failed to generate barcode: ' + (data.error || 'Unknown error');
+                        barcodeImg.alt = 'Failed to generate barcode';
                         barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>' + (data.error || 'Failed to generate barcode') + '</p>';
                     }
                 })
                 .catch(error => {
-                    barcodeImg.alt = 'Error: ' + error.message;
+                    barcodeImg.alt = 'Error';
                     barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Error: ' + error.message + '</p>';
                 });
         });

@@ -298,8 +298,9 @@ def generate_pdf417():
                 "error": "No data provided"
             }), 400
         
-        # Fetch from TEC-IT API
+        # Fetch from TEC-IT API - use raw format without encoding
         tec_it_url = f'https://barcode.tec-it.com/barcode/pdf417/{data}'
+        
         response = requests.get(tec_it_url, timeout=10)
         
         if response.status_code == 200:
@@ -314,7 +315,7 @@ def generate_pdf417():
         else:
             return jsonify({
                 "success": False,
-                "error": f"TEC-IT API returned status {response.status_code}"
+                "error": f"TEC-IT API returned status {response.status_code}. Data may be invalid."
             }), 500
     
     except requests.exceptions.Timeout:
