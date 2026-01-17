@@ -370,16 +370,23 @@ class LicenseViewer {
 
     generateQRCode(elementId, data) {
         try {
-            QRCode.toCanvas(document.getElementById(elementId), data, {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            // Clear previous QR code if exists
+            element.innerHTML = '';
+            
+            // Use the qrcode.js library
+            new QRCode(elementId, {
+                text: data,
                 width: 100,
-                margin: 1,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                }
+                height: 100,
+                colorDark: '#000000',
+                colorLight: '#FFFFFF',
+                correctLevel: QRCode.CorrectLevel.H
             });
         } catch (error) {
-            console.error('Error generating QR code:', error);
+            // Silently fail if QR code generation fails
         }
     }
 
