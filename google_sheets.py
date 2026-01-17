@@ -89,20 +89,12 @@ class GoogleSheetsConnector:
         # Read all data from the sheet
         raw_data = self.get_sheet_data(spreadsheet_id, 'Sheet1!A1:Z1000')
         
-        print(f"DEBUG: raw_data received: {len(raw_data)} rows")
-        if raw_data:
-            print(f"DEBUG: First row (header): {raw_data[0]}")
-            if len(raw_data) > 1:
-                print(f"DEBUG: Second row (first data): {raw_data[1]}")
-        
         if not raw_data:
             return []
         
         # Assuming first row contains headers
         headers = raw_data[0]
         data_rows = raw_data[1:]  # Skip header row
-        
-        print(f"DEBUG: Processing {len(data_rows)} data rows")
         
         licenses = []
         
@@ -137,10 +129,8 @@ class GoogleSheetsConnector:
                 licenses.append(license_data)
                 
             except Exception as e:
-                print(f"⚠️ Error processing row {i + 2}: {e}")
                 continue
         
-        print(f"DEBUG: Successfully created {len(licenses)} license objects")
         return licenses
 
 # For quick testing

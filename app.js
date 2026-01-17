@@ -19,24 +19,17 @@ class LicenseViewer {
         this.setupFilters();
         this.setupSearch();
         this.setupRefreshButton();
-        
-        console.log('🎯 Init complete. Applying filters...');
         this.applyFilters();
     }
 
     async loadDataFromAPI() {
         try {
-            console.log('🔄 Starting to fetch licenses from API...');
             const response = await fetch('/api/licenses');
-            console.log('📡 API Response status:', response.status);
             const data = await response.json();
-            
-            console.log('📦 API Response data:', data);
             
             if (data.success) {
                 this.licenses = data.licenses;
                 this.dataSource = data.source === 'google_sheets' ? 'Google Sheets' : 'Sample Data';
-                console.log(`✅ Loaded ${this.licenses.length} licenses from ${this.dataSource}`);
                 
                 // Extract unique states for filter
                 this.licenses.forEach(license => {
@@ -62,14 +55,12 @@ class LicenseViewer {
                 });
                 
                 this.updateDataSourceInfo(data.timestamp);
-                console.log(`✅ Loaded ${this.licenses.length} licenses from ${this.dataSource}`);
                 
             } else {
                 throw new Error(data.error || 'Failed to load data');
             }
             
         } catch (error) {
-            console.error('❌ Error loading data from API:', error);
             this.showError(`Failed to load data: ${error.message}`);
             this.loadSampleData();
         }
@@ -82,12 +73,10 @@ class LicenseViewer {
             errorDiv.className = 'alert alert-danger';
             errorDiv.innerHTML = `<strong>Error:</strong> ${message}`;
             mainContent.insertAdjacentElement('afterbegin', errorDiv);
-            console.log('Displayed error:', message);
         }
     }
 
     loadSampleData() {
-        console.log('📄 Loading sample data...');
         this.licenses = [
             {
                 id: 1,
@@ -186,15 +175,6 @@ class LicenseViewer {
         const selectedState = document.getElementById('stateFilter').value;
         const selectedStatus = document.getElementById('statusFilter').value;
 
-        console.log('🔍 applyFilters called');
-        console.log('Search term:', searchTerm);
-        console.log('Selected state:', selectedState);
-        console.log('Licenses to filter:', this.licenses.length);
-        
-        if (this.licenses.length > 0) {
-            console.log('First license object:', this.licenses[0]);
-        }
-
         this.filteredLicenses = this.licenses.filter(license => {
             // Search filter
             const searchMatch = !searchTerm || 
@@ -218,7 +198,6 @@ class LicenseViewer {
                     
                     if (!isNaN(expDate.getTime())) {
                         const daysUntilExpiry = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
-                        console.log(`License ${license.firstName}: expires ${license.expiration}, days until: ${daysUntilExpiry}`);
                         
                         if (selectedStatus === 'valid') {
                             statusMatch = daysUntilExpiry > 30;
@@ -228,19 +207,15 @@ class LicenseViewer {
                             statusMatch = daysUntilExpiry < 0;
                         }
                     } else {
-                        console.warn('Invalid date:', license.expiration);
                         statusMatch = true;
                     }
                 } catch (e) {
-                    console.warn('Date parsing error for:', license.expiration, e);
                     statusMatch = true;
                 }
             }
 
             return searchMatch && stateMatch && statusMatch;
         });
-        
-        console.log('✅ After filtering:', this.filteredLicenses.length);
 
         this.currentPage = 1;
         this.renderLicenses();
@@ -257,10 +232,6 @@ class LicenseViewer {
         const grid = document.getElementById('licenseGrid');
         const resultCount = document.getElementById('resultCount');
         const pageInfo = document.getElementById('pageInfo');
-        
-        console.log('📊 renderLicenses called');
-        console.log('Total licenses loaded:', this.licenses.length);
-        console.log('Filtered licenses:', this.filteredLicenses.length);
         
         // Calculate pagination
         const totalLicenses = this.filteredLicenses.length;
@@ -641,7 +612,6 @@ class LicenseViewer {
 
     showLoading() {
         const grid = document.getElementById('licenseGrid');
-        console.log('🔄 Showing loading state...');
         grid.innerHTML = `
             <div class="col-12">
                 <div class="card shadow-sm">
@@ -651,9 +621,6 @@ class LicenseViewer {
                         </div>
                         <h4 class="mt-3">Loading Driver's License Data...</h4>
                         <p class="text-muted">Connecting to Google Sheets API...</p>
-                        <small class="text-secondary d-block mt-3">
-                            <code style="background:#f0f0f0;padding:5px">Check browser console for debug info (F12)</code>
-                        </small>
                     </div>
                 </div>
             </div>

@@ -28,18 +28,13 @@ CONFIG = {
 credentials_json_str = os.getenv("GOOGLE_CREDENTIALS")
 if credentials_json_str:
     try:
-        print("🔍 Found GOOGLE_CREDENTIALS in environment")
         credentials_data = json.loads(credentials_json_str)
         temp_creds_path = "/tmp/credentials.json"
         with open(temp_creds_path, 'w') as f:
             json.dump(credentials_data, f)
         CONFIG["CREDENTIALS_FILE"] = temp_creds_path
-        print(f"✅ Using credentials from environment variable: {temp_creds_path}")
     except Exception as e:
-        print(f"❌ Failed to parse GOOGLE_CREDENTIALS: {e}")
-        print(f"First 100 chars of GOOGLE_CREDENTIALS: {credentials_json_str[:100]}")
-else:
-    print("⚠️ GOOGLE_CREDENTIALS not found in environment")
+        pass
 
 
 # Initialize Google Sheets connector
@@ -75,29 +70,16 @@ def get_license_data(force_refresh=False):
     
     # Try to get data from Google Sheets
     if sheets_connector and CONFIG["GOOGLE_SHEET_ID"] != "YOUR_SHEET_ID_HERE":
-        print("🌐 Fetching data from Google Sheets...")
-        print(f"📋 Sheet ID: {CONFIG['GOOGLE_SHEET_ID']}")
         try:
             licenses = sheets_connector.get_license_data(CONFIG["GOOGLE_SHEET_ID"])
             if licenses:
                 cached_data = licenses
                 cache_timestamp = datetime.now()
-                print(f"✅ Fetched {len(licenses)} licenses from Google Sheets")
                 return licenses
-            else:
-                print("⚠️ No data from Google Sheets (empty response), falling back to sample data")
         except Exception as e:
-            print(f"❌ Error fetching from Google Sheets: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        if not sheets_connector:
-            print("⚠️ Google Sheets connector not initialized")
-        if CONFIG["GOOGLE_SHEET_ID"] == "YOUR_SHEET_ID_HERE":
-            print("⚠️ GOOGLE_SHEET_ID not configured (still set to placeholder)")
+            pass
     
     # Fallback to sample data
-    print("📄 Using sample data")
     try:
         with open('sample_data.json', 'r') as f:
             cached_data = json.load(f)
