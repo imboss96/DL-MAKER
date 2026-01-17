@@ -393,19 +393,31 @@ class LicenseViewer {
         const dobFormatted = license.dateOfBirth ? license.dateOfBirth.replace(/-/g, '') : '';
         const expFormatted = license.expiration ? license.expiration.replace(/-/g, '') : '';
         
-        // Simplified format that PDF417 can handle
-        const aamvaText = [
-            `LN:${license.lastName || ''}`,
-            `FN:${license.firstName || ''}`,
-            `MI:${license.middleInitial || ''}`,
-            `DOB:${dobFormatted}`,
-            `EXP:${expFormatted}`,
-            `LIC:${license.licenseNumber || ''}`,
-            `STATE:${license.state || ''}`,
-            `CLASS:${license.licenseClass || ''}`
-        ].join('|');
+        // ANSI 636 AAMVA standard format for US driver's licenses
+        const aamvaLines = [
+            '@',
+            'ANSIBIN',
+            'AAMVA6360060101',
+            'DLDCA' + (license.middleInitial || '').toUpperCase(),
+            'DCS' + (license.lastName || '').toUpperCase(),
+            'DAC' + (license.firstName || '').toUpperCase(),
+            'DAD' + (license.state || '').toUpperCase(),
+            'DBB' + dobFormatted,
+            'DBA' + expFormatted,
+            'DAJ' + (license.state || '').toUpperCase(),
+            'DAQ' + (license.licenseNumber || ''),
+            'DCF' + (license.licenseClass || ''),
+            'DCG' + (license.restrictions || 'NONE'),
+            'DAY' + (license.eyeColor || ''),
+            'DAZ' + (license.hairColor || ''),
+            'DCQ' + (license.organDonor ? 'Y' : 'N'),
+            'DCL' + (license.city || ''),
+            'DAG' + (license.street || ''),
+            'DAI' + (license.street || ''),
+            'DAK' + (license.zipCode || '')
+        ];
         
-        return aamvaText;
+        return aamvaLines.join('\n');
     }
 
     renderPagination(totalPages) {
@@ -613,7 +625,9 @@ class LicenseViewer {
             barcodeImg.src = '';
             barcodeImg.alt = 'Generating barcode...';
             
-            const encodedData = encodeURIComponent(aamvaText);
+            // Remove newlines and join for barcode encoding
+            const compactData = aamvaText.replace(/\n/g, '');
+            const encodedData = encodeURIComponent(compactData);
             
             // Call server API to generate barcode
             fetch(`/api/pdf417?data=${encodedData}`)
