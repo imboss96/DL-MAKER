@@ -187,16 +187,11 @@ class LicenseGenerator:
         return filename
     
     def upload_to_google_sheets(self, sheet_id, count=1000):
-        """Generate entries and upload directly to Google Sheets"""
+        """Generate entries and append to Google Sheets (without clearing existing data)"""
         print("🚀 Generating 1000 license entries...")
         
-        # Prepare data
-        headers = ["ID", "First Name", "Last Name", "Middle", "DOB", "State", 
-                  "License Number", "City", "Street Address", "ZIP", "Height", 
-                  "Weight", "Eye Color", "Hair Color", "Expiration", 
-                  "License Class", "Restrictions", "Organ Donor"]
-        
-        data = [headers]
+        # Prepare data (without headers - we'll append to existing data)
+        data = []
         
         for i in range(1, count + 1):
             entry = self.generate_entry(i)
@@ -216,28 +211,31 @@ class LicenseGenerator:
                 print("Check if credentials.json exists and is valid")
                 return False
             
-            # Clear existing data
-            print("🧹 Clearing existing sheet data...")
-            connector.service.spreadsheets().values().clear(
+            # Get the next available row
+            print("📊 Finding next available row...")
+            result = connector.service.spreadsheets().values().get(
                 spreadsheetId=sheet_id,
-                range='Sheet1!A:Z'
+                range='Sheet1!A:A'
             ).execute()
             
-            # Upload new data
-            print("📤 Uploading new data...")
+            values = result.get('values', [])
+            next_row = len(values) + 1
+            
+            # Append new data
+            print(f"📤 Appending new data starting at row {next_row}...")
             body = {
                 'values': data
             }
             
-            result = connector.service.spreadsheets().values().update(
+            result = connector.service.spreadsheets().values().append(
                 spreadsheetId=sheet_id,
-                range='Sheet1!A1',
+                range=f'Sheet1!A{next_row}',
                 valueInputOption='RAW',
                 body=body
             ).execute()
             
-            print(f"✅ Successfully uploaded {result.get('updatedCells')} cells")
-            print(f"📊 {count} license entries now in your Google Sheet")
+            print(f"✅ Successfully uploaded {result.get('updates', {}).get('updatedCells')} cells")
+            print(f"📊 {count} new license entries appended to your Google Sheet")
             print(f"🔗 Sheet URL: https://docs.google.com/spreadsheets/d/{sheet_id}/edit")
             
             return True
@@ -251,7 +249,7 @@ class LicenseGenerator:
             return False
     
     def upload_from_csv(self, csv_file, sheet_id):
-        """Upload existing CSV file to Google Sheets"""
+        """Upload existing CSV file to Google Sheets (append instead of replace)"""
         print(f"📂 Reading CSV file: {csv_file}")
         
         try:
@@ -259,7 +257,9 @@ class LicenseGenerator:
                 reader = csv.reader(f)
                 data = list(reader)
             
-            print(f"📊 Found {len(data)-1} entries in CSV")
+            # Skip header row if present (assume first row is headers)
+            data_to_append = data[1:] if len(data) > 1 else data
+            print(f"📊 Found {len(data_to_append)} entries in CSV")
             
             # Connect to Google Sheets
             connector = GoogleSheetsConnector('credentials.json')
@@ -268,27 +268,31 @@ class LicenseGenerator:
                 print("❌ Failed to connect to Google Sheets API")
                 return False
             
-            # Clear and upload
-            print("🧹 Clearing existing sheet data...")
-            connector.service.spreadsheets().values().clear(
+            # Get the next available row
+            print("📊 Finding next available row...")
+            result = connector.service.spreadsheets().values().get(
                 spreadsheetId=sheet_id,
-                range='Sheet1!A:Z'
+                range='Sheet1!A:A'
             ).execute()
             
-            print("📤 Uploading CSV data...")
+            values = result.get('values', [])
+            next_row = len(values) + 1
+            
+            # Append data
+            print(f"📤 Appending data starting at row {next_row}...")
             body = {
-                'values': data
+                'values': data_to_append
             }
             
-            result = connector.service.spreadsheets().values().update(
+            result = connector.service.spreadsheets().values().append(
                 spreadsheetId=sheet_id,
-                range='Sheet1!A1',
+                range=f'Sheet1!A{next_row}',
                 valueInputOption='RAW',
                 body=body
             ).execute()
             
-            print(f"✅ Successfully uploaded {result.get('updatedCells')} cells")
-            print(f"📊 {len(data)-1} license entries now in your Google Sheet")
+            print(f"✅ Successfully uploaded {result.get('updates', {}).get('updatedCells')} cells")
+            print(f"📊 {len(data_to_append)} license entries appended to your Google Sheet")
             
             return True
             
