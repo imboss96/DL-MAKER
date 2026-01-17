@@ -28,14 +28,18 @@ CONFIG = {
 credentials_json_str = os.getenv("GOOGLE_CREDENTIALS")
 if credentials_json_str:
     try:
+        print("🔍 Found GOOGLE_CREDENTIALS in environment")
         credentials_data = json.loads(credentials_json_str)
         temp_creds_path = "/tmp/credentials.json"
         with open(temp_creds_path, 'w') as f:
             json.dump(credentials_data, f)
         CONFIG["CREDENTIALS_FILE"] = temp_creds_path
-        print("✅ Using credentials from environment variable")
+        print(f"✅ Using credentials from environment variable: {temp_creds_path}")
     except Exception as e:
-        print(f"⚠️ Failed to parse GOOGLE_CREDENTIALS: {e}")
+        print(f"❌ Failed to parse GOOGLE_CREDENTIALS: {e}")
+        print(f"First 100 chars of GOOGLE_CREDENTIALS: {credentials_json_str[:100]}")
+else:
+    print("⚠️ GOOGLE_CREDENTIALS not found in environment")
 
 
 # Initialize Google Sheets connector
