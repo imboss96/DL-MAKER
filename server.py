@@ -24,6 +24,20 @@ CONFIG = {
     "DEBUG": os.getenv("DEBUG", "True").lower() == "true"
 }
 
+# Check if credentials are in environment variable (for cloud deployment)
+credentials_json_str = os.getenv("GOOGLE_CREDENTIALS")
+if credentials_json_str:
+    try:
+        credentials_data = json.loads(credentials_json_str)
+        temp_creds_path = "/tmp/credentials.json"
+        with open(temp_creds_path, 'w') as f:
+            json.dump(credentials_data, f)
+        CONFIG["CREDENTIALS_FILE"] = temp_creds_path
+        print("✅ Using credentials from environment variable")
+    except Exception as e:
+        print(f"⚠️ Failed to parse GOOGLE_CREDENTIALS: {e}")
+
+
 # Initialize Google Sheets connector
 sheets_connector = None
 cached_data = None
