@@ -298,25 +298,33 @@ def generate_pdf417():
                 "error": "No data provided"
             }), 400
         
-        # Fetch from TEC-IT API - use raw format without encoding
-        tec_it_url = f'https://barcode.tec-it.com/barcode/pdf417/{data}'
+        # Use TEC-IT query parameter format (the API endpoint format)
+        # Try the direct barcode endpoint first
+        tec_it_urls = [
+            f'https://barcode.tec-it.com/api/barcode/pdf417/{data}',
+            f'https://barcode.tec-it.com/barcode/pdf417/{data}?quality=1',
+        ]
         
-        response = requests.get(tec_it_url, timeout=10)
+        for tec_it_url in tec_it_urls:
+            try:
+                response = requests.get(tec_it_url, timeout=10)
+                
+                if response.status_code == 200:
+                    # Convert binary image to base64
+                    import base64
+                    img_base64 = base64.b64encode(response.content).decode()
+                    
+                    return jsonify({
+                        "success": True,
+                        "barcode": f"data:image/png;base64,{img_base64}"
+                    })
+            except:
+                continue
         
-        if response.status_code == 200:
-            # Convert binary image to base64
-            import base64
-            img_base64 = base64.b64encode(response.content).decode()
-            
-            return jsonify({
-                "success": True,
-                "barcode": f"data:image/png;base64,{img_base64}"
-            })
-        else:
-            return jsonify({
-                "success": False,
-                "error": f"TEC-IT API returned status {response.status_code}. Data may be invalid."
-            }), 500
+        return jsonify({
+            "success": False,
+            "error": "TEC-IT API could not generate barcode. The data format may be invalid."
+        }), 500
     
     except requests.exceptions.Timeout:
         return jsonify({

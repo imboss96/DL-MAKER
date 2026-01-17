@@ -393,28 +393,19 @@ class LicenseViewer {
         const dobFormatted = license.dateOfBirth ? license.dateOfBirth.replace(/-/g, '') : '';
         const expFormatted = license.expiration ? license.expiration.replace(/-/g, '') : '';
         
-        const lines = [
-            "@",
-            "ANSI 636008080002DL00410287ZA03290015DL",
-            `DAA${(license.lastName || '').toUpperCase()}`,
-            `DAC${(license.firstName || '').toUpperCase()}`,
-            `DAD${(license.middleInitial || '').toUpperCase()}`,
-            `DAG${(license.street || '').toUpperCase()}`,
-            `DAI${(license.city || '').toUpperCase()}`,
-            `DAJ${(license.state || '').toUpperCase()}`,
-            `DAK${license.zipCode || ''}`,
-            `DAQ${license.licenseNumber || ''}`,
-            `DBA${expFormatted}`,
-            `DBB${dobFormatted}`,
-            "DBC1",
-            `DAY${license.eyeColor || ''}`,
-            `DAZ${license.hairColor || ''}`,
-            `DCF${license.licenseClass || ''}`,
-            `DCH${license.restrictions || 'NONE'}`,
-            `DCQ${license.organDonor ? 'Y' : 'N'}`
-        ];
+        // Simplified format that PDF417 can handle
+        const aamvaText = [
+            `LN:${license.lastName || ''}`,
+            `FN:${license.firstName || ''}`,
+            `MI:${license.middleInitial || ''}`,
+            `DOB:${dobFormatted}`,
+            `EXP:${expFormatted}`,
+            `LIC:${license.licenseNumber || ''}`,
+            `STATE:${license.state || ''}`,
+            `CLASS:${license.licenseClass || ''}`
+        ].join('|');
         
-        return lines.filter(line => line.length > 1).join('\n');
+        return aamvaText;
     }
 
     renderPagination(totalPages) {
@@ -622,9 +613,7 @@ class LicenseViewer {
             barcodeImg.src = '';
             barcodeImg.alt = 'Generating barcode...';
             
-            // Convert AAMVA text to compact format (remove newlines)
-            const compactData = aamvaText.replace(/\n/g, '');
-            const encodedData = encodeURIComponent(compactData);
+            const encodedData = encodeURIComponent(aamvaText);
             
             // Call server API to generate barcode
             fetch(`/api/pdf417?data=${encodedData}`)
@@ -634,12 +623,10 @@ class LicenseViewer {
                         barcodeImg.src = data.barcode;
                         barcodeImg.alt = 'PDF417 Barcode';
                     } else {
-                        barcodeImg.alt = 'Failed to generate barcode';
                         barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>' + (data.error || 'Failed to generate barcode') + '</p>';
                     }
                 })
                 .catch(error => {
-                    barcodeImg.alt = 'Error';
                     barcodeContainer.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>Error: ' + error.message + '</p>';
                 });
         });
