@@ -29,7 +29,7 @@ class LicenseViewer {
             
             if (data.success) {
                 this.licenses = data.licenses;
-                this.dataSource = data.source === 'google_sheets' ? 'Google Sheets' : 'Sample Data';
+                this.dataSource = data.source === 'google_sheets' ? 'AMVA DATASOURCE' : 'Sample Data';
                 
                 // Extract unique states for filter
                 this.licenses.forEach(license => {
@@ -626,7 +626,7 @@ class LicenseViewer {
                             <span class="visually-hidden">Loading...</span>
                         </div>
                         <h4 class="mt-3">Loading Driver's License Data...</h4>
-                        <p class="text-muted">Connecting to Google Sheets API...</p>
+                        <p class="text-muted">Connecting to DIY DATABASE...</p>
                     </div>
                 </div>
             </div>
