@@ -186,6 +186,65 @@ class LicenseGenerator:
         print(f"📊 Total entries: {count}")
         return filename
     
+    def generate_pdf417_barcodes(self, count=100, output_dir="pdf417_barcodes"):
+        """Generate 2D PDF 417 barcodes for license entries"""
+        try:
+            from treepoem import generate_barcode
+            from PIL import Image
+        except ImportError:
+            print("❌ Required libraries not found!")
+            print("Install them with: pip install treepoem pillow")
+            return False
+        
+        import os
+        
+        # Create output directory
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            print(f"📁 Created directory: {output_dir}")
+        
+        print(f"\n🔲 Generating {count} PDF 417 barcodes...")
+        
+        for i in range(1, count + 1):
+            try:
+                # Generate license entry data
+                entry = self.generate_entry(i)
+                
+                # Create barcode data string (compact format for PDF 417)
+                # Format: LICENSENUM|NAME|DOB|STATE|EXPDATE
+                barcode_data = (
+                    f"DL:{entry[6]}|"
+                    f"NAME:{entry[1]} {entry[2]}|"
+                    f"DOB:{entry[4]}|"
+                    f"STATE:{entry[5]}|"
+                    f"ADDR:{entry[8]}|"
+                    f"ZIP:{entry[9]}|"
+                    f"EXP:{entry[14]}"
+                )
+                
+                # Generate PDF 417 barcode image
+                barcode_image = generate_barcode(
+                    barcode_type='pdf417',
+                    data=barcode_data,
+                    options={'module_width': 0.5}
+                )
+                
+                # Save barcode image
+                filename = os.path.join(output_dir, f"license_{i:04d}.png")
+                barcode_image.save(filename)
+                
+                if i % 50 == 0:
+                    print(f"Generated {i} barcodes...")
+                    
+            except Exception as e:
+                print(f"⚠️  Error generating barcode {i}: {e}")
+                continue
+        
+        print(f"\n✅ PDF 417 barcodes generated successfully!")
+        print(f"📁 Saved to: {output_dir}")
+        print(f"📊 Total barcodes created: {count}")
+        return True
+    
     def upload_to_google_sheets(self, sheet_id, count=1000):
         """Generate entries and append to Google Sheets (without clearing existing data)"""
         print("🚀 Generating 1000 license entries...")
@@ -325,9 +384,10 @@ def main():
         print("2. Generate CSV file only (save locally)")
         print("3. Upload existing CSV file to Google Sheets")
         print("4. Generate and save both CSV and upload")
-        print("5. Exit")
+        print("5. Generate 2D PDF 417 barcodes")
+        print("6. Exit")
         
-        choice = input("\nSelect option (1-5): ").strip()
+        choice = input("\nSelect option (1-6): ").strip()
         
         if choice == "1":
             print("\n" + "=" * 60)
@@ -370,6 +430,15 @@ def main():
             break
             
         elif choice == "5":
+            print("\n" + "=" * 60)
+            print("OPTION 5: Generate 2D PDF 417 Barcodes")
+            print("=" * 60)
+            barcode_count = input("Enter number of barcodes to generate (default 100): ").strip()
+            barcode_count = int(barcode_count) if barcode_count.isdigit() else 100
+            generator.generate_pdf417_barcodes(barcode_count, "pdf417_barcodes")
+            break
+            
+        elif choice == "6":
             print("👋 Goodbye!")
             break
             

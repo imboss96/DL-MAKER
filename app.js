@@ -80,11 +80,27 @@ class LicenseViewer {
         this.licenses = [
             {
                 id: 1,
-                firstName: 'James',
-                lastName: 'Wilson',
-                state: 'CA',
-                licenseNumber: 'F8723945',
-                city: 'Los Angeles'
+                firstName: 'Amy',
+                lastName: 'Hill',
+                state: 'GA',
+                licenseNumber: '373072006',
+                city: 'Savannah',
+                dateOfBirth: '1997-05-07',
+                expiration: '2028-12-18',
+                middleInitial: 'Q',
+                licenseClass: 'C',
+                street: '1175 Maple Dr',
+                zipCode: '64081',
+                eyeColor: 'GRN',
+                hairColor: 'BRO',
+                height: '505',
+                weight: '140',
+                restrictions: 'NON',
+                endorsements: 'NON',
+                organDonor: true,
+                sex: '1',
+                issueDate: '2023-01-01',
+                county: ''
             }
         ];
         this.dataSource = 'Sample Data';
@@ -292,7 +308,7 @@ class LicenseViewer {
             expiryText = 'VALID';
         }
 
-        const fullName = `${license.firstName} ${license.middleInitial}. ${license.lastName}`;
+        const fullName = `${license.firstName} ${license.middleInitial ? license.middleInitial + '.' : ''} ${license.lastName}`.trim();
         const address = `${license.street}, ${license.city}, ${license.state} ${license.zipCode}`;
         const aamvaData = this.generateAAMVA(license);
 
@@ -390,34 +406,113 @@ class LicenseViewer {
     }
 
     generateAAMVA(license) {
-        const dobFormatted = license.dateOfBirth ? license.dateOfBirth.replace(/-/g, '') : '';
-        const expFormatted = license.expiration ? license.expiration.replace(/-/g, '') : '';
+        // Helper function to format strings for AAMVA with correct padding
+        const formatField = (value, maxLength, padChar = ' ') => {
+            if (!value) return ''.padEnd(maxLength, padChar);
+            const str = value.toString().toUpperCase();
+            // For names and addresses, left-justify with spaces on right
+            return str.padEnd(maxLength, padChar).substring(0, maxLength);
+        };
         
-        // ANSI 636 AAMVA standard format for US driver's licenses
+        // Format dates to YYYYMMDD
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '19000101';
+            return dateStr.replace(/-/g, '');
+        };
+        
+        // Format height - ensure it's exactly 3 digits
+        const formatHeight = (heightStr) => {
+            if (!heightStr) return '511';
+            
+            // Handle height in different formats
+            let inches = 0;
+            
+            if (typeof heightStr === 'string') {
+                // Remove any non-numeric characters except dash
+                const cleanHeight = heightStr.replace(/[^\d-]/g, '');
+                
+                if (cleanHeight.includes('-')) {
+                    // Format: "5-11"
+                    const parts = cleanHeight.split('-');
+                    if (parts.length >= 2) {
+                        inches = (parseInt(parts[0]) * 12) + parseInt(parts[1]);
+                    }
+                } else if (cleanHeight.length === 3) {
+                    // Format: "511"
+                    const feet = parseInt(cleanHeight.charAt(0));
+                    const inch = parseInt(cleanHeight.substring(1));
+                    inches = (feet * 12) + inch;
+                } else {
+                    // Try to parse as inches directly
+                    inches = parseInt(cleanHeight) || 70;
+                }
+            } else {
+                // Assume it's already in inches
+                inches = parseInt(heightStr) || 70;
+            }
+            
+            // Ensure valid range (48-96 inches typical)
+            inches = Math.max(48, Math.min(96, inches));
+            return inches.toString().padStart(3, '0');
+        };
+        
+        // Generate document discriminator (12+ characters, unique to card)
+        const docDiscriminator = license.documentDiscriminator || 
+            (license.licenseNumber || '').substring(0, 9) + 
+            (license.state || 'XX') + 
+            formatDate(license.dateOfBirth).substring(2); // Use YYMMDD format
+        
+        // Get values from license or use defaults
+        const lastName = license.lastName || '';
+        const firstName = license.firstName || '';
+        const middleInitial = license.middleInitial || '';
+        const street = license.street || '';
+        const city = license.city || '';
+        const eyeColor = license.eyeColor || 'UNK';
+        const hairColor = license.hairColor || 'UNK';
+        const weight = license.weight || '140';
+        const licenseClass = license.licenseClass || 'C';
+        const restrictions = license.restrictions || 'NON';
+        const endorsements = license.endorsements || 'NON';
+        const county = license.county || '';
+        
+        // ANSI 636 AAMVA standard format (Version 09.00)
         const aamvaLines = [
-            '@',
-            'ANSIBIN',
-            'AAMVA6360060101',
-            'DLDCA' + (license.middleInitial || '').toUpperCase(),
-            'DCS' + (license.lastName || '').toUpperCase(),
-            'DAC' + (license.firstName || '').toUpperCase(),
-            'DAD' + (license.state || '').toUpperCase(),
-            'DBB' + dobFormatted,
-            'DBA' + expFormatted,
-            'DAJ' + (license.state || '').toUpperCase(),
-            'DAQ' + (license.licenseNumber || ''),
-            'DCF' + (license.licenseClass || ''),
-            'DCG' + (license.restrictions || 'NONE'),
-            'DAY' + (license.eyeColor || ''),
-            'DAZ' + (license.hairColor || ''),
-            'DCQ' + (license.organDonor ? 'Y' : 'N'),
-            'DCL' + (license.city || ''),
-            'DAG' + (license.street || ''),
-            'DAI' + (license.street || ''),
-            'DAK' + (license.zipCode || '')
+            '@',  // Start sentinel
+            'ANSIBIN',  // Binary indicator
+            'AAMVA6360090101',  // AAMVA version 09.00
+            '',  // Empty line for spacing
+            'DLDCAG01',  // Jurisdiction version number
+            'DCB',  // Optional field indicator
+            'DCS' + formatField(lastName, 40),  // Last Name (40 chars max)
+            'DAC' + formatField(firstName, 40),  // First Name
+            'DAD' + formatField(middleInitial, 4),  // Middle Initial/Name
+            'DBD' + formatDate(license.issueDate || '20230101'),  // Issue Date (YYYYMMDD)
+            'DBB' + formatDate(license.dateOfBirth),  // Date of Birth
+            'DBC' + (license.sex || '1'),  // Sex (1=Male, 2=Female, 9=Not specified)
+            'DBA' + formatDate(license.expiration),  // Expiration Date
+            'DAU' + formatHeight(license.height),  // Height in inches (e.g., 505 = 5'05")
+            'DAY' + formatField(eyeColor, 3),  // Eye Color (BRN, BLU, GRN, HAZ, etc.)
+            'DAZ' + formatField(hairColor, 3),  // Hair Color
+            'DAG' + formatField(street, 40),  // Street Address
+            'DAI' + formatField(city, 40),  // City
+            'DAJ' + formatField(license.state, 2),  // State
+            'DAK' + formatField(license.zipCode, 9),  // ZIP Code (5 or 9 digits)
+            'DAQ' + formatField(license.licenseNumber, 20),  // License Number
+            'DCF' + formatField(docDiscriminator, 12),  // Document Discriminator
+            'DCGUSA',  // Country
+            'DDE' + formatField(endorsements, 3),  // Endorsements
+            'DDF' + formatField(restrictions, 3),  // Restrictions
+            'DDG' + formatField(licenseClass, 2),  // Vehicle Class
+            'DAW' + formatField(weight, 3),  // Weight in pounds
+            'DDA' + (license.organDonor ? 'Y' : 'N'),  // Organ Donor Indicator
+            'DDB' + 'Y',  // Veteran Indicator (Y/N)
+            'DDK' + formatField(county, 40),  // County
+            'DCH' + '111111111'  // Audit information
         ];
         
-        return aamvaLines.join('\n');
+        // Join with newlines, removing empty lines
+        return aamvaLines.filter(line => line !== '').join('\n');
     }
 
     renderPagination(totalPages) {
@@ -498,13 +593,16 @@ class LicenseViewer {
             expiryStatus = '<span class="badge bg-success">Valid</span>';
         }
 
+        // Generate AAMVA data for display
+        const aamvaData = this.generateAAMVA(license);
+
         modalBody.innerHTML = `
             <div class="row">
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-body">
                             <h4 class="card-title mb-4">
-                                ${license.firstName} ${license.middleInitial}. ${license.lastName}
+                                ${license.firstName} ${license.middleInitial ? license.middleInitial + '.' : ''} ${license.lastName}
                                 <span class="badge bg-primary float-end">${license.state}</span>
                             </h4>
                             
@@ -539,7 +637,7 @@ class LicenseViewer {
                                     
                                     <div class="mb-3">
                                         <label class="form-label text-muted">Physical Description</label>
-                                        <div class="fs-5">${license.height}, ${license.weight} lbs</div>
+                                        <div class="fs-5">${this.formatHeightForDisplay(license.height)}, ${license.weight} lbs</div>
                                         <div class="text-muted">Eyes: ${license.eyeColor}, Hair: ${license.hairColor}</div>
                                     </div>
                                     
@@ -550,6 +648,11 @@ class LicenseViewer {
                                                 ${license.organDonor ? 'YES' : 'NO'}
                                             </span>
                                         </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Issue Date</label>
+                                        <div class="fs-5">${license.issueDate || 'N/A'}</div>
                                     </div>
                                 </div>
                             </div>
@@ -597,21 +700,71 @@ class LicenseViewer {
             <div class="card mt-3">
                 <div class="card-body">
                     <h6 class="card-title">AAMVA Data (for barcode generation)</h6>
-                    <pre class="bg-light p-3 rounded" style="font-size: 0.8rem;" id="aamvaData">${this.generateAAMVA(license)}</pre>
+                    <pre class="bg-light p-3 rounded" style="font-size: 0.8rem; max-height: 300px; overflow-y: auto;" id="aamvaData">${aamvaData}</pre>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>This is the standardized AAMVA format used in PDF417 barcodes on US driver's licenses
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">
+                        <i class="fas fa-barcode me-2"></i>Generate 1D Barcode
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Barcode Format</label>
+                            <select class="form-select form-select-sm" id="modal-barcode-format">
+                                <option value="code128" selected>Code128</option>
+                                <option value="code39">Code39</option>
+                                <option value="ean13">EAN-13</option>
+                                <option value="upca">UPC-A</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Data</label>
+                            <input type="text" class="form-control form-control-sm" id="modal-barcode-data" 
+                                   value="${license.licenseNumber}" placeholder="Enter barcode data">
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary w-100 mt-3" id="modal-generate-1d-btn">
+                        <i class="fas fa-cog me-2"></i>Generate 1D Barcode
+                    </button>
+                    
+                    <div id="modal-barcode1d-result" style="display: none;" class="mt-3">
+                        <div class="text-center p-3 border rounded bg-light">
+                            <p class="text-muted small mb-2"><strong id="modal-barcode1d-type">Code128</strong> Barcode:</p>
+                            <img id="modal-barcode1d-image" src="" alt="1D Barcode" style="max-width: 100%; max-height: 120px;">
+                            <p class="text-muted small mt-2 mb-0">
+                                <code id="modal-barcode1d-data"></code>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div id="modal-barcode1d-error" style="display: none;" class="mt-3">
+                        <div class="alert alert-danger alert-sm p-2 mb-0">
+                            <small><i class="fas fa-exclamation-circle me-1"></i><span id="modal-barcode1d-error-msg"></span></small>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
 
         // Generate QR code for modal
         setTimeout(() => {
-            this.generateQRCode('modal-qr', this.generateAAMVA(license));
+            this.generateQRCode('modal-qr', aamvaData);
         }, 100);
 
         // Add event listeners for modal buttons
         document.getElementById('copyAAMVA').addEventListener('click', () => {
             const aamvaText = document.getElementById('aamvaData').textContent;
             navigator.clipboard.writeText(aamvaText).then(() => {
-                alert('AAMVA data copied to clipboard!');
+                const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+                toast.show();
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard. Please try again.');
             });
         });
 
@@ -645,9 +798,67 @@ class LicenseViewer {
                 });
         });
 
+        // 1D Barcode generation in modal
+        const generate1DBtn = document.getElementById('modal-generate-1d-btn');
+        if (generate1DBtn) {
+            generate1DBtn.addEventListener('click', async () => {
+                const format = document.getElementById('modal-barcode-format').value;
+                const data = document.getElementById('modal-barcode-data').value.trim();
+                const resultDiv = document.getElementById('modal-barcode1d-result');
+                const errorDiv = document.getElementById('modal-barcode1d-error');
+                
+                if (!data) {
+                    alert('Please enter barcode data');
+                    return;
+                }
+                
+                if (data.length > 100) {
+                    alert('Data is too long (max 100 characters)');
+                    return;
+                }
+                
+                resultDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                generate1DBtn.disabled = true;
+                generate1DBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+                
+                try {
+                    const encodedData = encodeURIComponent(data);
+                    const response = await fetch(`/api/barcode1d?format=${format}&data=${encodedData}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        document.getElementById('modal-barcode1d-image').src = result.barcode;
+                        document.getElementById('modal-barcode1d-type').textContent = result.type.toUpperCase();
+                        document.getElementById('modal-barcode1d-data').textContent = result.data;
+                        resultDiv.style.display = 'block';
+                    } else {
+                        throw new Error(result.error || 'Failed to generate barcode');
+                    }
+                } catch (error) {
+                    errorDiv.style.display = 'block';
+                    document.getElementById('modal-barcode1d-error-msg').textContent = error.message;
+                } finally {
+                    generate1DBtn.disabled = false;
+                    generate1DBtn.innerHTML = '<i class="fas fa-cog me-2"></i>Generate 1D Barcode';
+                }
+            });
+        }
+
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('licenseModal'));
         modal.show();
+    }
+
+    formatHeightForDisplay(heightStr) {
+        if (!heightStr) return "5'11\"";
+        
+        const inches = parseInt(heightStr);
+        if (isNaN(inches)) return heightStr;
+        
+        const feet = Math.floor(inches / 12);
+        const remainingInches = inches % 12;
+        return `${feet}'${remainingInches.toString().padStart(2, '0')}"`;
     }
 
     showLoading() {
@@ -692,9 +903,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // Global helper functions
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => {
-        alert('Copied to clipboard!');
+        // Show toast notification if available
+        const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+        toast.show();
     }).catch(err => {
         console.error('Failed to copy: ', err);
+        alert('Failed to copy to clipboard. Please try again.');
     });
 };
 
@@ -711,6 +925,161 @@ document.addEventListener('keydown', (e) => {
         document.getElementById('searchInput').value = '';
         if (window.licenseViewer) {
             window.licenseViewer.applyFilters();
+        }
+    }
+});
+
+// 1D Barcode Generation
+document.addEventListener('DOMContentLoaded', () => {
+    const generateBtn = document.getElementById('generateBarcode1DBtn');
+    const clearBtn = document.getElementById('clearBarcode1D');
+    const formatSelect = document.getElementById('barcodeFormat');
+    const dataInput = document.getElementById('barcodeData');
+    
+    if (generateBtn) {
+        generateBtn.addEventListener('click', async function() {
+            const format = formatSelect.value;
+            const data = dataInput.value.trim();
+            
+            if (!data) {
+                alert('Please enter barcode data');
+                return;
+            }
+            
+            if (data.length > 100) {
+                alert('Data is too long (max 100 characters)');
+                return;
+            }
+            
+            // Hide previous results
+            document.getElementById('barcode1DResult').style.display = 'none';
+            document.getElementById('barcode1DError').style.display = 'none';
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+            
+            try {
+                const encodedData = encodeURIComponent(data);
+                const response = await fetch(`/api/barcode1d?format=${format}&data=${encodedData}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('barcode1DImage').src = result.barcode;
+                    document.getElementById('barcode1DType').textContent = result.type.toUpperCase();
+                    document.getElementById('barcode1DDataDisplay').textContent = result.data;
+                    document.getElementById('barcode1DResult').style.display = 'block';
+                    
+                    // Store current barcode for download
+                    window.currentBarcode1D = result.barcode;
+                    window.currentBarcode1DFormat = result.type;
+                } else {
+                    throw new Error(result.error || 'Failed to generate barcode');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('barcode1DErrorMessage').textContent = error.message;
+                document.getElementById('barcode1DError').style.display = 'block';
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fas fa-cog me-2"></i>Generate 1D Barcode';
+            }
+        });
+        
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                dataInput.value = 'DL12345678';
+                document.getElementById('barcode1DResult').style.display = 'none';
+                document.getElementById('barcode1DError').style.display = 'none';
+            });
+        }
+        
+        // Download barcode button
+        const downloadBtn = document.getElementById('download1DBarcode');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+                if (!window.currentBarcode1D) {
+                    alert('No barcode to download. Generate one first.');
+                    return;
+                }
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.href = window.currentBarcode1D;
+                link.download = `barcode-${window.currentBarcode1DFormat}-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+    }
+});
+
+// PDF417 Barcode Generation
+document.addEventListener('DOMContentLoaded', () => {
+    const generateBarcodesBtn = document.getElementById('generateBarcodesBtn');
+    const viewBarcodesBtn = document.getElementById('viewBarcodesBtn');
+    const barcodeCountInput = document.getElementById('barcodeCount');
+    
+    if (generateBarcodesBtn) {
+        generateBarcodesBtn.addEventListener('click', async function() {
+            const count = parseInt(barcodeCountInput.value) || 10;
+            
+            if (count < 1 || count > 1000) {
+                alert('Please enter a number between 1 and 1000');
+                return;
+            }
+            
+            // Show progress
+            document.getElementById('barcodeProgress').style.display = 'block';
+            document.getElementById('barcodeResult').style.display = 'none';
+            document.getElementById('barcodeError').style.display = 'none';
+            generateBarcodesBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/generate-barcodes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ count: count })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    document.getElementById('progressMessage').textContent = `Successfully generated ${data.count} barcodes!`;
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressText').textContent = '100%';
+                    
+                    document.getElementById('barcodeProgress').style.display = 'none';
+                    document.getElementById('barcodeResult').style.display = 'block';
+                    document.getElementById('resultCount').textContent = data.count;
+                    document.getElementById('resultPath').textContent = data.output_dir + '/';
+                    viewBarcodesBtn.style.display = 'inline-block';
+                } else {
+                    throw new Error(data.error || 'Failed to generate barcodes');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('barcodeProgress').style.display = 'none';
+                document.getElementById('barcodeError').style.display = 'block';
+                document.getElementById('errorMessage').textContent = error.message;
+            } finally {
+                generateBarcodesBtn.disabled = false;
+            }
+        });
+        
+        if (viewBarcodesBtn) {
+            viewBarcodesBtn.addEventListener('click', function() {
+                // On Windows, open the file explorer
+                if (navigator.platform.indexOf('Win') > -1) {
+                    fetch('/open-folder?path=pdf417_barcodes').catch(() => {
+                        alert('Open the pdf417_barcodes folder in your file explorer to view the generated barcodes.');
+                    });
+                } else {
+                    alert('Generated barcodes are saved in the pdf417_barcodes folder.');
+                }
+            });
         }
     }
 });

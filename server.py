@@ -339,6 +339,86 @@ def generate_pdf417():
             "error": f"Server error: {str(e)}"
         }), 500
 
+@app.route('/api/barcode1d')
+def generate_barcode1d():
+    """Generate 1D barcode (Code128, Code39, EAN-13, UPC-A)"""
+    try:
+        barcode_format = request.args.get('format', 'code128').lower()
+        data = request.args.get('data', '')
+        
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "No data provided"
+            }), 400
+        
+        if len(data) > 100:
+            return jsonify({
+                "success": False,
+                "error": "Data too long (max 100 characters)"
+            }), 400
+        
+        try:
+            import barcode
+            from barcode.writer import ImageWriter
+        except ImportError:
+            return jsonify({
+                "success": False,
+                "error": "python-barcode library not available. Install with: pip install python-barcode"
+            }), 500
+        
+        # Map format names to barcode types
+        format_map = {
+            'code128': 'code128',
+            'code39': 'code39',
+            'ean13': 'ean13',
+            'upca': 'upca'
+        }
+        
+        if barcode_format not in format_map:
+            return jsonify({
+                "success": False,
+                "error": f"Unsupported barcode format: {barcode_format}"
+            }), 400
+        
+        try:
+            # Generate 1D barcode using python-barcode
+            barcode_class = barcode.get_barcode_class(format_map[barcode_format])
+            barcode_instance = barcode_class(data, writer=ImageWriter())
+            
+            # Generate to BytesIO instead of file
+            img_buffer = BytesIO()
+            barcode_instance.write(img_buffer, options={'module_height': 15.0})
+            img_buffer.seek(0)
+            
+            # Convert to PNG format
+            from PIL import Image
+            img = Image.open(img_buffer)
+            png_buffer = BytesIO()
+            img.save(png_buffer, format='PNG')
+            png_buffer.seek(0)
+            
+            img_base64 = base64.b64encode(png_buffer.getvalue()).decode()
+            
+            return jsonify({
+                "success": True,
+                "barcode": f"data:image/png;base64,{img_base64}",
+                "type": barcode_format,
+                "data": data
+            })
+        
+        except Exception as barcode_error:
+            return jsonify({
+                "success": False,
+                "error": f"1D barcode generation failed: {str(barcode_error)}"
+            }), 500
+    
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Server error: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     print("🚀 Starting Driver's License Viewer Server")
     print(f"📊 Data Source: {'Google Sheets' if sheets_connector else 'Sample Data'}")

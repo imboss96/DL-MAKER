@@ -473,6 +473,83 @@
             </div>
         </div>
 
+        <!-- 1D Barcode Generator Section -->
+        <div class="row mt-5 mb-4">
+            <div class="col-12">
+                <div class="card card-license">
+                    <div class="license-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-barcode me-2"></i>Generate 1D Barcodes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            Generate 1D barcodes in multiple formats: Code128, Code39, EAN-13, and UPC-A.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-list me-2"></i>Barcode Format
+                                </label>
+                                <select class="form-select" id="barcodeFormat">
+                                    <option value="code128">Code128</option>
+                                    <option value="code39">Code39</option>
+                                    <option value="ean13">EAN-13</option>
+                                    <option value="upca">UPC-A</option>
+                                </select>
+                                <small class="text-muted">Select barcode type to generate</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-type me-2"></i>Barcode Data
+                                </label>
+                                <input type="text" class="form-control" id="barcodeData" 
+                                       placeholder="Enter data to encode" value="DL12345678">
+                                <small class="text-muted">Max 100 characters</small>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button class="btn btn-primary" id="generateBarcode1DBtn">
+                                    <i class="fas fa-cog me-2"></i>Generate 1D Barcode
+                                </button>
+                                <button class="btn btn-outline-secondary ms-2" id="clearBarcode1D">
+                                    <i class="fas fa-trash me-2"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div id="barcode1DResult" style="display: none;" class="mt-4 text-center">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-4">
+                                    <p class="text-muted small mb-3">Generated <span id="barcode1DType">Code128</span> Barcode:</p>
+                                    <img id="barcode1DImage" src="" alt="1D Barcode" style="max-width: 100%; max-height: 200px;">
+                                    <p class="text-muted mt-3 small">
+                                        <strong>Data:</strong> <code id="barcode1DDataDisplay"></code>
+                                    </p>
+                                    <button class="btn btn-sm btn-outline-primary mt-2" id="download1DBarcode">
+                                        <i class="fas fa-download me-2"></i>Download Barcode
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="barcode1DError" style="display: none;" class="mt-4">
+                            <div class="alert alert-danger border-0" role="alert">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-exclamation-circle fs-5"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="alert-heading mb-1">Error Generating Barcode</h6>
+                                        <p class="mb-0" id="barcode1DErrorMessage"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Help Text -->
         <div class="row mt-4">
             <div class="col-12">
@@ -486,7 +563,7 @@
                             <ul class="mb-0 ps-3">
                                 <li>Click on any license card to view detailed information</li>
                                 <li>Use QR codes to quickly access license data on mobile devices</li>
-                                <li>Copy AAMVA data to generate PDF417 barcodes for testing</li>
+                                <li>Generate 1D barcodes in multiple formats for license data</li>
                                 <li>Press <kbd>Ctrl+F</kbd> to quickly focus the search box</li>
                             </ul>
                         </div>
